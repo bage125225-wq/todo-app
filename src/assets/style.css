@@ -4,7 +4,7 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: Arial, sans-serif;
-  background-image: url('../public/blue_00102.jpg'); /* 背景图 */
+  background-image: url('/blue_00102.jpg'); /* 背景图 */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -16,7 +16,7 @@ html, body {
   margin: 0 auto; /* 水平居中 */
   padding: 20px;
   border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.85); /* 半透明背景文字可读 */
+  background-color: rgba(255, 255, 255, 0.9); /* 半透明背景 */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
