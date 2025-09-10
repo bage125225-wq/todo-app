@@ -79,7 +79,9 @@ export default {
   border-radius: 8px;
   width: 90%;
   max-width: 400px;
+  margin-top: 20px; 
 }
+
 
 .modal-content {
   display: flex;
