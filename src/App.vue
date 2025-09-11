@@ -1,61 +1,12 @@
-<template>
-  <div id="app">
-    <h1>Todo リスト</h1>
-
-    <!-- 按钮区域 -->
-    <div class="btn-container">
-      <button class="filter-btn" @click="showFilter = true">フィルター</button>
-      <button class="add-btn" @click="showModal = true">タスクを追加</button>
-      <button class="delete-btn" @click="deleteSelectedTasks" :disabled="!selectedTasks.length">一斉削除</button>
-    </div>
-
-    <!-- 筛选模态 -->
-    <Filter
-      v-if="showFilter"
-      :tags="['仕事','勉強','生活']"
-      @updateFilter="updateFilter"
-      @cancel="showFilter = false"
-    />
-
-    <!-- 添加任务模态 -->
-    <TaskInput
-      v-if="showModal"
-      @add-task="addTask"
-      @cancel="showModal = false"
-    />
-
-    <!-- 任务列表 -->
-    <ul class="task-list">
-      <TaskItem
-        v-for="(task, index) in pagedTasks"
-        :key="index"
-        :task="task"
-        :selected="selectedTasks.includes(task)"
-        @remove="removeTask"
-        @edit="updateTask"
-        @select="toggleTaskSelection"
-      />
-    </ul>
-
-    <!-- 分页 -->
-    <div class="pagination" v-if="totalPages > 1">
-      <button
-        v-for="page in totalPages"
-        :key="page"
-        :class="{ active: page === currentPage }"
-        @click="currentPage = page"
-      >
-        {{ page }}
-      </button>
-    </div>
-  </div>
-</template>
-
 <script>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import TaskInput from "./components/TaskInput.vue";
 import TaskItem from "./components/TaskItem.vue";
 import Filter from "./components/Filter.vue";
+
+// Firebase Firestore
+import { db } from "./firebase";
+import { collection, addDoc, getDocs, deleteDoc, doc } from "firebase/firestore";
 
 export default {
   components: { TaskInput, TaskItem, Filter },
@@ -79,17 +30,48 @@ export default {
       });
     };
 
-    const addTask = (task) => {
-      tasks.value.push(task);
+    // 从 Firestore 获取任务
+    const fetchTasks = async () => {
+      const querySnapshot = await getDocs(collection(db, "tasks"));
+      tasks.value = querySnapshot.docs.map(docSnap => ({
+        id: docSnap.id,         // Firestore 文档 ID
+        ...docSnap.data()
+      }));
       sortTasksByDate();
-      currentPage.value = 1;
-      showModal.value = false;
     };
 
-    const removeTask = (task) => {
-      tasks.value = tasks.value.filter(t => t !== task);
-      selectedTasks.value = selectedTasks.value.filter(t => t !== task);
-      if (currentPage.value > totalPages.value) currentPage.value = totalPages.value;
+    const addTask = async (task) => {
+      try {
+        // 添加到 Firestore
+        const docRef = await addDoc(collection(db, "tasks"), {
+          text: task.text,
+          tag: task.tag,
+          tagClass: task.tagClass,
+          date: task.date,
+          createdAt: new Date()
+        });
+
+        // 添加到本地数组
+        tasks.value.push({ ...task, id: docRef.id });
+        sortTasksByDate();
+        currentPage.value = 1;
+        showModal.value = false;
+      } catch (e) {
+        console.error("Error adding task to Firestore:", e);
+      }
+    };
+
+    const removeTask = async (task) => {
+      try {
+        if (task.id) {
+          await deleteDoc(doc(db, "tasks", task.id));
+        }
+        tasks.value = tasks.value.filter(t => t !== task);
+        selectedTasks.value = selectedTasks.value.filter(t => t !== task);
+        if (currentPage.value > totalPages.value) currentPage.value = totalPages.value;
+      } catch (e) {
+        console.error("Error deleting task:", e);
+      }
     };
 
     const updateTask = () => sortTasksByDate();
@@ -124,12 +106,21 @@ export default {
       }
     };
 
-    const deleteSelectedTasks = () => {
-      if (!selectedTasks.value.length) return;
+    const deleteSelectedTasks = async () => {
+      for (const task of selectedTasks.value) {
+        if (task.id) {
+          await deleteDoc(doc(db, "tasks", task.id));
+        }
+      }
       tasks.value = tasks.value.filter(t => !selectedTasks.value.includes(t));
       selectedTasks.value = [];
       if (currentPage.value > totalPages.value) currentPage.value = totalPages.value;
     };
+
+    // 页面加载时拉取 Firestore 数据
+    onMounted(() => {
+      fetchTasks();
+    });
 
     return {
       showModal,
@@ -149,69 +140,3 @@ export default {
   }
 };
 </script>
-
-<style>
-#app {
-  max-width: 600px;
-  margin: 30px auto;
-  padding: 0 16px;
-  font-family: "Noto Sans JP", sans-serif;
-}
-h1 {
-  text-align: center;
-  margin-bottom: 20px;
-  color: #333;
-}
-.btn-container {
-  display: flex;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.add-btn, .filter-btn, .delete-btn {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.2s;
-}
-.add-btn { background: #42b983; color: #fff; }
-.filter-btn { background: #3498db; color: #fff; }
-.delete-btn { background: #e74c3c; color: #fff; }
-.add-btn:hover { background: #369b72; }
-.filter-btn:hover { background: #2b7bbd; }
-.delete-btn:hover { background: #c0392b; }
-
-.task-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.pagination {
-  display: flex;
-  justify-content: center;
-  margin-top: 16px;
-  gap: 6px;
-}
-.pagination button {
-  padding: 6px 10px;
-  border: 1px solid #42b983;
-  background: #fff;
-  color: #42b983;
-  cursor: pointer;
-  border-radius: 4px;
-  font-weight: bold;
-  transition: all 0.2s;
-}
-.pagination button:hover {
-  background: #42b983;
-  color: #fff;
-}
-.pagination button.active {
-  background: #42b983;
-  color: #fff;
-  border-color: #42b983;
-}
-</style>
