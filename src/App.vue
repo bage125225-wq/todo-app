@@ -6,7 +6,7 @@
     <div class="btn-container">
       <button class="filter-btn" @click="showFilter = true">フィルター</button>
       <button class="add-btn" @click="showModal = true">タスクを追加</button>
-      <button class="delete-btn" @click="deleteSelectedTasks" :disabled="!selectedTasks.length">批量删除</button>
+      <button class="delete-btn" @click="deleteSelectedTasks" :disabled="!selectedTasks.length">一斉削除</button>
     </div>
 
     <!-- 筛选模态 -->

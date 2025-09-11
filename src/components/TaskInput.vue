@@ -15,12 +15,12 @@
         <div v-if="task.tag" :class="['tag-preview', getTagClass(task.tag)]">{{ task.tag }}</div>
 
         <button v-if="index === 0" type="button" class="add-extra-task" @click="addExtraTask">
-          追加任务
+          もう一つタスクを追加
         </button>
       </div>
 
       <div class="modal-actions">
-        <button @click="confirmAddAllTasks">提交全部任务</button>
+        <button @click="confirmAddAllTasks">タスクを一斉提出</button>
         <button @click="$emit('cancel')">キャンセル</button>
       </div>
     </div>
