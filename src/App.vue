@@ -2,6 +2,12 @@
   <div id="app">
     <h1>Todo リスト</h1>
 
+    <!-- 筛选功能 -->
+    <Filter
+      :tags="['仕事','勉強','生活']"
+      @updateFilter="updateFilter"
+    />
+
     <!-- 添加按钮 -->
     <div class="btn-container">
       <button class="add-btn" @click="showModal = true">タスクを追加</button>
@@ -43,31 +49,36 @@
 import { ref, computed } from "vue";
 import TaskInput from "./components/TaskInput.vue";
 import TaskItem from "./components/TaskItem.vue";
+import Filter from "./components/Filter.vue";
 
 export default {
-  components: { TaskInput, TaskItem },
+  components: { TaskInput, TaskItem, Filter },
   setup() {
     const showModal = ref(false);
     const tasks = ref([]);
     const tasksPerPage = 4;
     const currentPage = ref(1);
 
+    // 筛选条件
+    const filterKeyword = ref("");
+    const filterTag = ref("");
+
+    // 排序（保持不动）
     const sortTasksByDate = () => {
       const today = new Date();
       tasks.value.sort((a, b) => {
-      if (!a.date) return 1; // 无日期排在最后
-      if (!b.date) return -1;
-      const diffA = Math.abs(new Date(a.date) - today);
-      const diffB = Math.abs(new Date(b.date) - today);
-      return diffA - diffB;
-     });
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        const diffA = Math.abs(new Date(a.date) - today);
+        const diffB = Math.abs(new Date(b.date) - today);
+        return diffA - diffB;
+      });
     };
-
 
     const addTask = (task) => {
       tasks.value.push(task);
       sortTasksByDate();
-      currentPage.value = 1; // 新任务后显示第一页
+      currentPage.value = 1;
       showModal.value = false;
     };
 
@@ -81,63 +92,115 @@ export default {
       sortTasksByDate();
     };
 
-    const totalPages = computed(() => Math.ceil(tasks.value.length / tasksPerPage));
+    // 接收来自 Filter.vue 的事件
+    const updateFilter = ({ keyword, tag }) => {
+      filterKeyword.value = keyword;
+      filterTag.value = tag;
+      currentPage.value = 1; // 切换筛选条件时回到第一页
+    };
+
+    // 应用筛选条件
+    const filteredTasks = computed(() => {
+      return tasks.value.filter((task) => {
+        const matchKeyword = filterKeyword.value
+          ? task.text.includes(filterKeyword.value)
+          : true;
+        const matchTag = filterTag.value ? task.tag === filterTag.value : true;
+        return matchKeyword && matchTag;
+      });
+    });
+
+    const totalPages = computed(() =>
+      Math.ceil(filteredTasks.value.length / tasksPerPage)
+    );
 
     const pagedTasks = computed(() => {
       const start = (currentPage.value - 1) * tasksPerPage;
-      return tasks.value.slice(start, start + tasksPerPage);
+      return filteredTasks.value.slice(start, start + tasksPerPage);
     });
 
-    return { showModal, tasks, addTask, removeTask, updateTask, pagedTasks, totalPages, currentPage };
-  }
+    return {
+      showModal,
+      tasks,
+      addTask,
+      removeTask,
+      updateTask,
+      updateFilter,
+      pagedTasks,
+      totalPages,
+      currentPage,
+    };
+  },
 };
 </script>
+<style scoped>
+#app {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: sans-serif;
+}
 
-<style>
-/* 添加按钮居中 */
+/* 标题 */
+h1 {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+/* 筛选区 */
+.filter-section {
+  margin-bottom: 20px;
+}
+
+/* 添加按钮容器 */
 .btn-container {
   display: flex;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .add-btn {
-  padding: 8px 16px;
-  background: #42b983;
-  color: #fff;
+  background-color: #42b983;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
   border: none;
-  border-radius: 6px;
   cursor: pointer;
-  font-size: 16px;
+}
+.add-btn:hover {
+  background-color: #36986d;
+}
+
+/* 任务列表 */
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 20px 0;
+}
+
+ul li {
+  margin-bottom: 10px;
 }
 
 /* 分页 */
 .pagination {
   display: flex;
   justify-content: center;
-  margin-top: 16px;
-  gap: 6px;
+  gap: 8px;
+  margin-top: 20px;
 }
 
 .pagination button {
-  padding: 6px 10px;
-  border: 1px solid #42b983;
-  background: #fff;
-  color: #42b983;
+  padding: 6px 12px;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
   cursor: pointer;
-  border-radius: 4px;
-  font-weight: bold;
-  transition: all 0.2s;
-}
-
-.pagination button:hover {
-  background: #42b983;
-  color: #fff;
 }
 
 .pagination button.active {
   background: #42b983;
-  color: #fff;
-  border-color: #42b983;
+  color: white;
+  border: none;
 }
 </style>

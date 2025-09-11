@@ -80,6 +80,7 @@ export default {
   width: 90%;
   max-width: 400px;
   margin-top: 20px; 
+  transform: translateY(20px);
 }
 
 
