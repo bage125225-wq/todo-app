@@ -2,19 +2,25 @@
   <div class="modal-overlay" @click.self="$emit('cancel')">
     <div class="modal">
       <h2>タスクを追加</h2>
-      <div class="modal-content">
-        <textarea v-model="text" placeholder="タスクを入力..." class="task-textarea"></textarea>
-        <select v-model="tag">
+
+      <div v-for="(task, index) in tasks" :key="index" class="modal-content">
+        <textarea v-model="task.text" placeholder="タスクを入力..." class="task-textarea"></textarea>
+        <select v-model="task.tag">
           <option disabled value="">タグを選択</option>
           <option>仕事</option>
           <option>勉強</option>
           <option>生活</option>
         </select>
-        <input type="date" v-model="date" />
-        <div v-if="tag" :class="['tag-preview', getTagClass(tag)]">{{ tag }}</div>
+        <input type="date" v-model="task.date" />
+        <div v-if="task.tag" :class="['tag-preview', getTagClass(task.tag)]">{{ task.tag }}</div>
+
+        <button v-if="index === 0" type="button" class="add-extra-task" @click="addExtraTask">
+          追加任务
+        </button>
       </div>
+
       <div class="modal-actions">
-        <button @click="confirmAddTask">保存</button>
+        <button @click="confirmAddAllTasks">提交全部任务</button>
         <button @click="$emit('cancel')">キャンセル</button>
       </div>
     </div>
@@ -23,12 +29,10 @@
 
 <script>
 import { ref } from "vue";
-
 export default {
+  emits: ["add-task", "cancel"],
   setup(_, { emit }) {
-    const text = ref("");
-    const tag = ref("");
-    const date = ref("");
+    const tasks = ref([{ text: "", tag: "", date: "" }]);
 
     const getTagClass = (tagName) => {
       switch (tagName) {
@@ -39,24 +43,29 @@ export default {
       }
     };
 
-    const confirmAddTask = () => {
-      if (!text.value.trim()) return;
-      emit("add-task", {
-        text: text.value,
-        tag: tag.value,
-        tagClass: getTagClass(tag.value),
-        date: date.value,
-        editing: false,
-        editText: text.value,
-        editTag: tag.value,
-        editDate: date.value
-      });
-      text.value = "";
-      tag.value = "";
-      date.value = "";
+    const addExtraTask = () => {
+      tasks.value.push({ text: "", tag: "", date: "" });
     };
 
-    return { text, tag, date, getTagClass, confirmAddTask };
+    const confirmAddAllTasks = () => {
+      const validTasks = tasks.value.filter(t => t.text.trim());
+      if (!validTasks.length) return;
+      validTasks.forEach(task => {
+        emit("add-task", {
+          text: task.text,
+          tag: task.tag,
+          tagClass: getTagClass(task.tag),
+          date: task.date,
+          editing: false,
+          editText: task.text,
+          editTag: task.tag,
+          editDate: task.date
+        });
+      });
+      tasks.value = [{ text: "", tag: "", date: "" }];
+    };
+
+    return { tasks, getTagClass, addExtraTask, confirmAddAllTasks };
   }
 };
 </script>
@@ -72,25 +81,21 @@ export default {
   justify-content: center;
   z-index: 999;
 }
-
 .modal {
   background: #fff;
   padding: 20px;
   border-radius: 8px;
   width: 90%;
-  max-width: 400px;
-  margin-top: 20px; 
-  transform: translateY(20px);
+  max-width: 500px;
+  max-height: 90%;
+  overflow-y: auto;
 }
-
-
 .modal-content {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  position: relative;
+  margin-bottom: 12px;
 }
-
 .task-textarea {
   width: 100%;
   min-height: 60px;
@@ -100,14 +105,21 @@ export default {
   resize: both;
   font-size: 14px;
 }
-
+.add-extra-task {
+  background-color: #3498db;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  width: fit-content;
+}
 .modal-actions {
-  margin-top: 16px;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 12px;
 }
-
 .tag-preview {
   padding: 2px 6px;
   border-radius: 4px;
@@ -116,7 +128,6 @@ export default {
   font-weight: bold;
   width: fit-content;
 }
-
 .tag-work { background-color: #e74c3c; }
 .tag-study { background-color: #3498db; }
 .tag-life { background-color: #42b983; }

@@ -1,13 +1,12 @@
 <template>
   <li class="task-item">
+    <input type="checkbox" class="task-checkbox" :checked="selected" @change="$emit('select', task, $event.target.checked)" />
     <div class="task-content">
       <div v-if="task.tag" :class="['tag', task.tagClass]">{{ task.tag }}</div>
-
       <template v-if="!task.editing">
         <div class="task-text">{{ task.text }}</div>
         <div v-if="task.date" class="date">📅 {{ task.date }}</div>
       </template>
-
       <template v-else>
         <textarea v-model="task.editText" rows="3" class="task-textarea"></textarea>
         <select v-model="task.editTag">
@@ -19,7 +18,6 @@
         <input type="date" v-model="task.editDate" />
       </template>
     </div>
-
     <div class="task-actions">
       <button v-if="!task.editing" @click="startEdit">編集</button>
       <button v-if="task.editing" @click="saveEdit">保存</button>
@@ -31,8 +29,8 @@
 
 <script>
 export default {
-  props: ["task"],
-  emits: ["remove", "edit"],
+  props: ["task", "selected"],
+  emits: ["remove", "edit", "select"],
   setup(props, { emit }) {
     const getTagClass = (tag) => {
       switch (tag) {
@@ -75,13 +73,19 @@ export default {
 <style>
 .task-item {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: flex-start;
   gap: 10px;
   margin-bottom: 8px;
   padding: 8px;
   border: 1px solid #ddd;
   border-radius: 6px;
+}
+.task-checkbox {
+  width: 16px;
+  height: 16px;
+  margin-top: 6px; /* 调整和文字垂直对齐 */
+  flex-shrink: 0;  /* 避免复选框被压缩 */
 }
 
 .task-content {
@@ -92,17 +96,12 @@ export default {
   position: relative;
   padding-top: 28px;
 }
-
-.task-text {
-  word-break: break-word;
-}
-
+.task-text { word-break: break-word; }
 .task-actions {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
-
 .tag {
   position: absolute;
   top: 8px;
@@ -114,11 +113,9 @@ export default {
   font-weight: bold;
   white-space: nowrap;
 }
-
 .tag-work { background-color: #e74c3c; }
 .tag-study { background-color: #3498db; }
 .tag-life { background-color: #42b983; }
-
 .date {
   margin-left: 8px;
   font-size: 12px;

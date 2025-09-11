@@ -1,33 +1,15 @@
 <template>
-  <div class="filter-container">
-    <!-- 打开模态框的按钮 -->
-    <button class="filter-btn" @click="showModal = true">フィルタ</button>
-
-    <!-- 模态框 -->
-    <div v-if="showModal" class="modal-overlay">
-      <div class="modal">
-        <h2>タスクをフィルタ</h2>
-
-        <!-- 关键词搜索 -->
-        <input
-          v-model="keyword"
-          type="text"
-          placeholder="キーワードで検索"
-          @keyup.enter="applyFilter"
-        />
-
-        <!-- 标签选择 -->
-        <select v-model="selectedTag">
-          <option value="">全てのタグ</option>
-          <option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option>
-        </select>
-
-        <!-- 按钮组 -->
-        <div class="actions">
-          <button @click="applyFilter">適用</button>
-          <button @click="clearFilter">クリア</button>
-          <button @click="showModal = false">閉じる</button>
-        </div>
+  <div class="modal-overlay" @click.self="$emit('cancel')">
+    <div class="modal">
+      <h2>フィルター</h2>
+      <input v-model="keyword" placeholder="キーワードで検索" @keyup.enter="applyFilter" />
+      <select v-model="selectedTag">
+        <option value="">全てのタグ</option>
+        <option v-for="tag in tags" :key="tag" :value="tag">{{ tag }}</option>
+      </select>
+      <div class="modal-actions">
+        <button @click="applyFilter">検索</button>
+        <button @click="$emit('cancel')">キャンセル</button>
       </div>
     </div>
   </div>
@@ -35,75 +17,44 @@
 
 <script>
 import { ref } from "vue";
-
 export default {
-  props: {
-    tags: {
-      type: Array,
-      default: () => [],
-    },
-  },
-  emits: ["updateFilter"],
+  props: ["tags"],
+  emits: ["updateFilter", "cancel"],
   setup(props, { emit }) {
     const keyword = ref("");
     const selectedTag = ref("");
-    const showModal = ref(false);
 
     const applyFilter = () => {
       emit("updateFilter", { keyword: keyword.value, tag: selectedTag.value });
-      showModal.value = false; // 应用后关闭模态框
     };
 
-    const clearFilter = () => {
-      keyword.value = "";
-      selectedTag.value = "";
-      emit("updateFilter", { keyword: "", tag: "" });
-      showModal.value = false;
-    };
-
-    return { keyword, selectedTag, showModal, applyFilter, clearFilter };
-  },
+    return { keyword, selectedTag, applyFilter };
+  }
 };
 </script>
 
-<style scoped>
-.filter-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 16px;
-}
-
-.filter-btn {
-  padding: 8px 16px;
-  background: #2c3e50;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
+<style>
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  z-index: 999;
 }
-
 .modal {
   background: #fff;
   padding: 20px;
-  border-radius: 10px;
-  width: 300px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 400px;
 }
-
-.actions {
+.modal-actions {
   display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 12px;
 }
 </style>
