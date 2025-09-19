@@ -1,8 +1,6 @@
-// src/firebase.js
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";  // Firestore
+import { getFirestore } from "firebase/firestore";
 
-// 你的 Firebase 配置信息
 const firebaseConfig = {
   apiKey: "AIzaSyDbz21NsL-GNhIMHVd_dBm8buYVLVsut9o",
   authDomain: "todo-app-zhang.firebaseapp.com",
@@ -13,10 +11,7 @@ const firebaseConfig = {
   measurementId: "G-LBRHP4JWFM"
 };
 
-// 初始化 Firebase
 const app = initializeApp(firebaseConfig);
-
-// 初始化 Firestore
 const db = getFirestore(app);
 
 export { db };

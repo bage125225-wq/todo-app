@@ -70,64 +70,14 @@ export default {
 };
 </script>
 
-<style>
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-.modal {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90%;
-  overflow-y: auto;
-}
-.modal-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-.task-textarea {
-  width: 100%;
-  min-height: 60px;
-  padding: 6px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  resize: both;
-  font-size: 14px;
-}
-.add-extra-task {
-  background-color: #3498db;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 10px;
-  cursor: pointer;
-  width: fit-content;
-}
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 12px;
-}
-.tag-preview {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #fff;
-  font-weight: bold;
-  width: fit-content;
-}
+<style scoped>
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 999; }
+.modal { background: #fff; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px; max-height: 90%; overflow-y: auto; }
+.modal-content { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+.task-textarea { width: 100%; min-height: 60px; padding: 6px; border: 1px solid #ddd; border-radius: 4px; resize: both; font-size: 14px; }
+.add-extra-task { background-color: #3498db; color: #fff; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; width: fit-content; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 12px; }
+.tag-preview { padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #fff; font-weight: bold; width: fit-content; }
 .tag-work { background-color: #e74c3c; }
 .tag-study { background-color: #3498db; }
 .tag-life { background-color: #42b983; }
