@@ -1,0 +1,19 @@
+[33me4c7ade[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m)[m 20250919
+[33m851e0a2[m 1
+[33m8f52113[m japanese
+[33m43662e5[m new function
+[33mff82e97[m new filter function
+[33mb7e54c8[m 1
+[33me3f4267[m 1
+[33m76d9fb0[m コンポーネントをインポートするように変更し 今はApp.vueでまとめて管理、TaskInput.vueとTaskItem.vueに機能を分割
+[33me4ab8b2[m package.jsonを書き換えた
+[33md903176[m HTMLファイルを更新
+[33m04b618c[m タグ機能、日付指定機能を追加した
+[33mbe603e5[m Merge branch 'main' of https://github.com/bage125225-wq/todo-app
+[33md017ac7[m Update dependencies and build configuration
+[33m9e49255[m Update README.md
+[33m0e32a10[m Update README.md
+[33m7252a0c[m Add dist folder for deployment
+[33mebe9743[m Finish merge, add LICENSE and README
+[33mb06c342[m initial commit
+[33m68bf1c3[m Initial commit
