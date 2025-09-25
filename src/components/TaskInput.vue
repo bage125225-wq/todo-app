@@ -1,55 +1,124 @@
 <template>
-  <div class="task-input">
-    <input v-model="newTask" placeholder="新タスクを追加" />
-    <button @click="submitTask">添加</button>
+  <div>
+    <button class="add-btn" @click="showModal = true">タスクを追加</button>
+
+    <div v-if="showModal" class="modal-overlay" @click.self="cancel">
+      <div class="modal">
+        <h2>タスクを追加</h2>
+
+        <div v-for="(task, index) in newTasks" :key="index" class="task-entry">
+          <textarea v-model="task.text" placeholder="タスクを入力..." rows="2"></textarea>
+          <select v-model="task.tag">
+            <option disabled value="">タグを選択</option>
+            <option>仕事</option>
+            <option>勉強</option>
+            <option>生活</option>
+          </select>
+          <input type="date" v-model="task.date" />
+        </div>
+
+        <button @click="addAnother">追加のタスク</button>
+
+        <div class="modal-actions">
+          <button @click="confirm">保存</button>
+          <button @click="cancel">キャンセル</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent, ref } from 'vue'
+<script>
+import { ref } from "vue";
 
-export default defineComponent({
-  name: 'TaskInput',
-  emits: ['add-task'],
+export default {
+  emits: ["add-tasks"],
   setup(_, { emit }) {
-    const newTask = ref('')
+    const showModal = ref(false);
+    const newTasks = ref([{ text: "", tag: "", date: "" }]);
 
-    function submitTask() {
-      if (newTask.value.trim() === '') return
-      emit('add-task', newTask.value)
-      newTask.value = ''
-    }
+    // 仅用于生成颜色class；其余逻辑不变
+    const getTagClass = (tag) => {
+      switch (tag) {
+        case "仕事": return "tag-work";
+        case "勉強": return "tag-study";
+        case "生活": return "tag-life";
+        default: return "";
+      }
+    };
 
-    return { newTask, submitTask }
+    const addAnother = () => {
+      newTasks.value.push({ text: "", tag: "", date: "" });
+    };
+
+    const confirm = () => {
+      const tasksToAdd = newTasks.value
+        .filter(t => t.text && t.text.trim())
+        .map(t => ({
+          id: Date.now() + Math.random(),
+          text: t.text,
+          tag: t.tag,
+          tagClass: getTagClass(t.tag), // ★ 关键：补上颜色class
+          date: t.date,
+          hidden: false
+        }));
+      if (tasksToAdd.length) emit("add-tasks", tasksToAdd);
+      newTasks.value = [{ text: "", tag: "", date: "" }];
+      showModal.value = false;
+    };
+
+    const cancel = () => {
+      newTasks.value = [{ text: "", tag: "", date: "" }];
+      showModal.value = false;
+    };
+
+    return { showModal, newTasks, addAnother, confirm, cancel };
   }
-})
+};
 </script>
 
-<style scoped>
-.task-input {
-  display: flex;           
-  gap: 10px;               
-  margin-bottom: 20px;
-  width: 100%;
-}
-
-.task-input input {
-  flex: 1;                 
-  padding: 8px 10px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
-
-.task-input button {
-  padding: 8px 12px;
-  border-radius: 5px;
+<style>
+.add-btn {
+  padding: 8px 16px;
+  background: #42b983;
+  color: #fff;
   border: none;
-  background-color: #42b983;
-  color: white;
+  border-radius: 6px;
   cursor: pointer;
 }
-
-.task-input button:hover {
-  background-color: #369870;
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+.modal {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 500px;
+}
+.task-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.task-entry textarea {
+  resize: none;
+  width: 100%;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
 }
 </style>

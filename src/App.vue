@@ -2,66 +2,28 @@
   <div id="app">
     <h1>Todo リスト</h1>
 
-    <!-- 添加按钮 -->
     <div class="btn-container">
-      <button class="add-btn" @click="showModal = true">タスクを追加</button>
+      <Filter @filter="applyFilter" />
+      <BulkDelete
+   v-if="selectedTasks.length > 0"
+  :selected-tasks="selectedTasks"
+  @delete-selected="removeSelectedTasks"
+   />
+      <TaskInput @add-tasks="addTasks" />
     </div>
 
-    <!-- 模态框 -->
-    <div v-if="showModal" class="modal-overlay" @click.self="cancelAddTask">
-      <div class="modal">
-        <h2>タスクを追加</h2>
-        <div class="modal-content">
-          <textarea v-model="newTask" placeholder="タスクを入力..." class="task-textarea"></textarea>
-          <select v-model="newTag">
-            <option disabled value="">タグを選択</option>
-            <option>仕事</option>
-            <option>勉強</option>
-            <option>生活</option>
-          </select>
-          <input type="date" v-model="newDate" />
-          <div v-if="newTag" :class="['tag-preview', getTagClass(newTag)]">{{ newTag }}</div>
-        </div>
-        <div class="modal-actions">
-          <button @click="confirmAddTask">保存</button>
-          <button @click="cancelAddTask">キャンセル</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 任务列表 -->
     <ul>
-      <li v-for="(task, index) in pagedTasks" :key="index" class="task-item">
-        <div class="task-content">
-          <!-- 标签左上角显示 -->
-          <div v-if="task.tag" :class="['tag', task.tagClass]">{{ task.tag }}</div>
-
-          <template v-if="!task.editing">
-            <div class="task-text">{{ task.text }}</div>
-            <div v-if="task.date" class="date">📅 {{ task.date }}</div>
-          </template>
-
-          <template v-else>
-            <textarea v-model="task.editText" rows="3" class="task-textarea"></textarea>
-            <select v-model="task.editTag">
-              <option disabled value="">タグを選択</option>
-              <option>仕事</option>
-              <option>勉強</option>
-              <option>生活</option>
-            </select>
-            <input type="date" v-model="task.editDate" />
-          </template>
-        </div>
-        <div class="task-actions">
-          <button v-if="!task.editing" @click="startEdit(task)">編集</button>
-          <button v-if="task.editing" @click="saveEdit(task)">保存</button>
-          <button v-if="task.editing" @click="cancelEdit(task)">キャンセル</button>
-          <button @click="removeTask(task)">削除</button>
-        </div>
-      </li>
+      <TaskItem
+        v-for="task in pagedTasks"
+        :key="task.id"
+        :task="task"
+        :selected="selectedTasks.includes(task)"
+        @select-change="onSelectChange"
+        @update-task="updateTask"
+        @remove-task="removeTask"
+      />
     </ul>
 
-    <!-- 分页 -->
     <div class="pagination" v-if="totalPages > 1">
       <button
         v-for="page in totalPages"
@@ -76,266 +38,120 @@
 </template>
 
 <script>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import TaskInput from "./components/TaskInput.vue";
+import TaskItem from "./components/TaskItem.vue";
+import Filter from "./components/Filter.vue";
+import BulkDelete from "./components/BulkDelete.vue";
 
 export default {
+  components: { TaskInput, TaskItem, Filter, BulkDelete },
   setup() {
-    const showModal = ref(false);
-    const newTask = ref("");
-    const newTag = ref("");
-    const newDate = ref("");
     const tasks = ref([]);
-
+    const selectedTasks = ref([]);
     const tasksPerPage = 4;
     const currentPage = ref(1);
 
-    const getTagClass = (tag) => {
-      switch (tag) {
-        case "仕事": return "tag-work";
-        case "勉強": return "tag-study";
-        case "生活": return "tag-life";
-        default: return "";
-      }
+    const STORAGE_KEY = "todo-app-tasks";
+
+    // 初始化读取 localStorage
+    onMounted(() => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) tasks.value = JSON.parse(saved);
+    });
+
+    const saveToLocal = () => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks.value));
     };
 
-    const confirmAddTask = () => {
-      if (newTask.value.trim()) {
-        tasks.value.push({
-          text: newTask.value,
-          tag: newTag.value,
-          tagClass: getTagClass(newTag.value),
-          date: newDate.value,
-          editing: false,
-          editText: "",
-          editTag: "",
-          editDate: ""
-        });
-        resetForm();
-        sortTasksByDate();
-        currentPage.value = Math.ceil(tasks.value.length / tasksPerPage);
-        showModal.value = false;
-      }
-    };
-
-    const cancelAddTask = () => {
-      resetForm();
-      showModal.value = false;
-    };
-
-    const resetForm = () => {
-      newTask.value = "";
-      newTag.value = "";
-      newDate.value = "";
+    const addTasks = (newTasks) => {
+      newTasks.forEach(task => tasks.value.push(task));
+      saveToLocal();
+      currentPage.value = Math.ceil(tasks.value.length / tasksPerPage);
     };
 
     const removeTask = (task) => {
-      const index = tasks.value.indexOf(task);
-      if (index > -1) tasks.value.splice(index, 1);
-      if (currentPage.value > totalPages.value) currentPage.value = totalPages.value;
+      tasks.value = tasks.value.filter(t => t.id !== task.id);
+      selectedTasks.value = selectedTasks.value.filter(t => t.id !== task.id);
+      saveToLocal();
     };
 
-    const startEdit = (task) => {
-      task.editing = true;
-      task.editText = task.text;
-      task.editTag = task.tag;
-      task.editDate = task.date;
-      task.tagClass = getTagClass(task.editTag);
+    const updateTask = (updated) => {
+      const task = tasks.value.find(t => t.id === updated.id);
+      if (task) Object.assign(task, updated);
+      saveToLocal();
     };
 
-    const saveEdit = (task) => {
-      task.text = task.editText;
-      task.tag = task.editTag;
-      task.tagClass = getTagClass(task.editTag);
-      task.date = task.editDate;
-      task.editing = false;
-      sortTasksByDate();
+    const removeSelectedTasks = () => {
+      tasks.value = tasks.value.filter(t => !selectedTasks.value.includes(t));
+      selectedTasks.value = [];
+      saveToLocal();
     };
 
-    const cancelEdit = (task) => {
-      task.editing = false;
-      task.editText = "";
-      task.editTag = "";
-      task.editDate = "";
+    const onSelectChange = ({ task, selected }) => {
+      if (selected) {
+        if (!selectedTasks.value.includes(task)) selectedTasks.value.push(task);
+      } else {
+        selectedTasks.value = selectedTasks.value.filter(t => t.id !== task.id);
+      }
     };
 
-    const sortTasksByDate = () => {
-      tasks.value.sort((a, b) => {
-        if (!a.date) return 1;
-        if (!b.date) return -1;
-        return new Date(a.date) - new Date(b.date);
-      });
+    const applyFilter = (filter) => {
+      // 简单筛选逻辑：tag + keyword
+      if (filter.tag || filter.keyword) {
+        tasks.value.forEach(task => {
+          task.hidden = false;
+          if (filter.tag && task.tag !== filter.tag) task.hidden = true;
+          if (filter.keyword && !task.text.includes(filter.keyword)) task.hidden = true;
+        });
+      } else {
+        tasks.value.forEach(task => task.hidden = false);
+      }
     };
 
-    const totalPages = computed(() => Math.ceil(tasks.value.length / tasksPerPage));
-    const pagedTasks = computed(() => {
-      const start = (currentPage.value - 1) * tasksPerPage;
-      const end = start + tasksPerPage;
-      return tasks.value.slice(start, end);
+    const totalPages = computed(() => {
+      return Math.ceil(tasks.value.filter(t => !t.hidden).length / tasksPerPage);
     });
 
+    const pagedTasks = computed(() => {
+      const visibleTasks = tasks.value.filter(t => !t.hidden);
+      const start = (currentPage.value - 1) * tasksPerPage;
+      return visibleTasks.slice(start, start + tasksPerPage);
+    });
+    
+
     return {
-      showModal,
-      newTask,
-      newTag,
-      newDate,
       tasks,
+      selectedTasks,
       currentPage,
       totalPages,
       pagedTasks,
-      getTagClass,
-      confirmAddTask,
-      cancelAddTask,
+      addTasks,
       removeTask,
-      startEdit,
-      saveEdit,
-      cancelEdit
+      updateTask,
+      removeSelectedTasks,
+      onSelectChange,
+      applyFilter
     };
+    
   }
 };
 </script>
 
 <style>
-/* 添加按钮居中 */
 .btn-container {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 16px;
 }
-
-.add-btn {
-  padding: 8px 16px;
-  background: #42b983;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-/* 模态框 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal {
-  background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  width: 90%;
-  max-width: 400px;
-}
-
-.modal-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  position: relative;
-}
-
-.task-textarea {
-  width: 100%;
-  min-height: 60px;
-  padding: 6px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  resize: both;
-  font-size: 14px;
-}
-
-.modal-actions {
-  margin-top: 16px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.tag-preview {
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #fff;
-  font-weight: bold;
-  width: fit-content;
-}
-
-/* 任务列表 */
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-/* 单条任务 */
-.task-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 8px;
-  padding: 8px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-}
-
-.task-content {
-  flex: 1;
-  min-width: 0;
-  word-break: break-word;
-  white-space: pre-wrap;
-  position: relative;
-  padding-top: 28px; /* 为悬浮标签预留空间 */
-}
-
-.task-text {
-  word-break: break-word;
-}
-
-.task-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-/* 标签样式 */
-.tag {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 12px;
-  color: #fff;
-  font-weight: bold;
-  white-space: nowrap;
-}
-
-/* 标签颜色 */
-.tag-work { background-color: #e74c3c; }
-.tag-study { background-color: #3498db; }
-.tag-life { background-color: #42b983; }
-
-/* 日期样式 */
-.date {
-  margin-left: 8px;
-  font-size: 12px;
-  color: #555;
-}
-
-/* 分页 */
 .pagination {
   display: flex;
   justify-content: center;
   margin-top: 16px;
   gap: 6px;
 }
-
 .pagination button {
   padding: 6px 10px;
   border: 1px solid #42b983;
@@ -344,17 +160,9 @@ ul {
   cursor: pointer;
   border-radius: 4px;
   font-weight: bold;
-  transition: all 0.2s;
 }
-
-.pagination button:hover {
-  background: #42b983;
-  color: #fff;
-}
-
 .pagination button.active {
   background: #42b983;
   color: #fff;
-  border-color: #42b983;
 }
 </style>

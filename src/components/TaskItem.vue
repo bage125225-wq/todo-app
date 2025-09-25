@@ -1,100 +1,182 @@
 <template>
-  <li>
-    
-    <div v-if="!isEditing">{{ task.title }}</div>
+  <li class="task-item">
+    <!-- 勾选框 -->
     <input
-      v-else
-      v-model="editText"
-      @keyup.enter="saveEdit"
-      placeholder="编辑任务"
+      type="checkbox"
+      v-model="selected"
+      @change="$emit('select-change', { task, selected })"
+      class="task-checkbox"
     />
 
-    
-    <div>
+    <!-- 任务内容 -->
+    <div class="task-content">
+      <div class="task-header">
+        <!-- 标签 -->
+        <span v-if="task.tag" :class="['tag', task.tagClass]">{{ task.tag }}</span>
+        <!-- 普通模式显示文字 -->
+        <span v-if="!isEditing" class="task-text">{{ task.text }}</span>
+        <!-- 编辑模式显示输入框 -->
+        <textarea
+          v-else
+          v-model="editText"
+          class="task-textarea"
+        ></textarea>
+      </div>
+      <!-- 日期显示 -->
+      <div v-if="task.date && !isEditing" class="date">📅 {{ task.date }}</div>
+    </div>
+
+    <!-- 操作按钮 -->
+    <div class="task-actions">
       <button v-if="!isEditing" @click="toggleEdit">編集</button>
-      <button v-if="isEditing" @click="saveEdit">完成</button>
+      <button v-if="isEditing" @click="saveEdit">保存</button>
       <button v-if="isEditing" @click="cancelEdit">取消</button>
-      <button v-if="!isEditing" @click="$emit('remove-task', task.id)">削除</button>
+      <button @click="$emit('remove-task', task)">削除</button>
     </div>
   </li>
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, watch } from 'vue'
+import { defineComponent, ref, watch } from 'vue';
 
 export default defineComponent({
   name: 'TaskItem',
   props: {
-    task: {
-      type: Object,
-      required: true
-    }
+    task: { type: Object, required: true },
+    modelValue: { type: Boolean, default: false } // 勾选状态
   },
-  emits: ['remove-task', 'update-task'],
+  emits: ['remove-task', 'update-task', 'select-change'],
   setup(props, { emit }) {
-    const isEditing = ref(false)
-    const editText = ref(props.task.title)
+    const isEditing = ref(false);
+    const editText = ref(props.task.text);
+    const selected = ref(false);
 
-    
     watch(
-      () => props.task.title,
-      (newTitle) => {
-        if (!isEditing.value) editText.value = newTitle
+      () => props.task.text,
+      (newText) => {
+        if (!isEditing.value) editText.value = newText;
       }
-    )
+    );
 
     function toggleEdit() {
-      isEditing.value = true
-      editText.value = props.task.title
+      isEditing.value = true;
+      editText.value = props.task.text;
     }
 
     function cancelEdit() {
-      isEditing.value = false
-      editText.value = props.task.title
+      isEditing.value = false;
+      editText.value = props.task.text;
     }
 
     function saveEdit() {
-      if (editText.value.trim() === '') return
-      emit('update-task', { id: props.task.id, title: editText.value })
-      isEditing.value = false
+      if (!editText.value.trim()) return;
+      emit('update-task', { ...props.task, text: editText.value });
+      isEditing.value = false;
     }
 
-    return { isEditing, editText, toggleEdit, cancelEdit, saveEdit }
+    return { isEditing, editText, toggleEdit, cancelEdit, saveEdit, selected };
   }
-})
+});
 </script>
 
 <style scoped>
-li {
+.task-item {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  border-radius: 5px;
-  background-color: #f0f0f0;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background-color: #f9f9f9;
 }
 
-li input {
+/* 勾选框 */
+.task-checkbox {
+  width: 20px;
+  height: 20px;
+  margin-top: 6px;
+}
+
+/* 任务内容 */
+.task-content {
   flex: 1;
-  margin-right: 8px;
-  padding: 4px 8px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
+  position: relative;
+  word-break: break-word;
 }
 
-li button {
-  margin-left: 4px;
+/* header 保持 tag 和文字在同一行 */
+.task-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 标签样式 */
+.tag {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.tag-work { background-color: #e74c3c; }
+.tag-study { background-color: #3498db; }
+.tag-life { background-color: #42b983; }
+
+/* 文字和编辑框 */
+.task-text {
+  flex: 1;
+}
+
+.task-textarea {
+  width: 100%;
+  min-height: 50px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  resize: vertical;
+  font-size: 14px;
+}
+
+/* 日期样式 */
+.date {
+  font-size: 12px;
+  color: #555;
+  margin-top: 4px;
+}
+
+/* 操作按钮 */
+.task-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.task-actions button {
   padding: 4px 8px;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
   background-color: #42b983;
   color: white;
-  transition: background-color 0.2s;
+  font-size: 12px;
+  transition: 0.2s;
 }
 
-li button:hover {
+
+.task-actions button:hover {
   background-color: #369870;
+}
+
+.task-actions button:last-child {
+  background-color: #e74c3c;
+}
+
+.task-actions button:last-child:hover {
+  background-color: #c0392b;
 }
 </style>
